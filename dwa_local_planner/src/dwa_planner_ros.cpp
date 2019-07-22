@@ -117,6 +117,8 @@ namespace dwa_local_planner {
         odom_helper_.setOdomTopic( odom_topic_ );
       }
       
+      latchedStopRotateController_.initialize(name);
+
       initialized_ = true;
 
       dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
@@ -127,7 +129,7 @@ namespace dwa_local_planner {
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
   }
-  
+
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
@@ -193,9 +195,9 @@ namespace dwa_local_planner {
     //compute what trajectory to drive along
     tf::Stamped<tf::Pose> drive_cmds;
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
-    
+
     // call with updated footprint
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, costmap_ros_->getRobotFootprint());
+    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment
@@ -221,7 +223,7 @@ namespace dwa_local_planner {
       return false;
     }
 
-    ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.", 
+    ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.",
                     cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z);
 
     // Fill out the local plan
@@ -269,7 +271,7 @@ namespace dwa_local_planner {
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
 
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
-    dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan);
+    dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan, costmap_ros_->getRobotFootprint());
 
     if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_)) {
       //publish an empty plan because we've reached our goal position
