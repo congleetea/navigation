@@ -35,34 +35,37 @@ class CellData
 
 class CachedDistanceMap
 {
-  public:
-    CachedDistanceMap(double scale, double max_dist) : 
-      distances_(NULL), scale_(scale), max_dist_(max_dist) 
+ public:
+  CachedDistanceMap(double scale, double max_dist) : 
+      distances_(NULL), scale_(scale), max_dist_(max_dist) {
+    cell_radius_ = max_dist / scale;
+    // distances_是一个二维数组，是一个core，表示max_dist范围内的cell的距离，用
+    // 这在计算距离障碍物距离的时候就不用计算，只要查表即可。 
+    // eg. 如果max_dist=2.0m,scale=0.05，那么cell_radius_=40,那么这个二维数组就
+    // 是42x42大小的。值就是距离第一个元素的距离(m)值。这样如果我们要计算距离障
+    // 碍物x,y轴cell为(w,h)的cell的距离就可以直接查询distances_[w][h]的结果即可。
+    distances_ = new double *[cell_radius_+2];
+    for(int i=0; i<=cell_radius_+1; i++)
     {
-      cell_radius_ = max_dist / scale;
-      distances_ = new double *[cell_radius_+2];
+      distances_[i] = new double[cell_radius_+2];
+      for(int j=0; j<=cell_radius_+1; j++)
+      {
+        distances_[i][j] = sqrt(i*i + j*j);
+      }
+    }
+  }
+  ~CachedDistanceMap() {
+    if(distances_)
+    {
       for(int i=0; i<=cell_radius_+1; i++)
-      {
-	distances_[i] = new double[cell_radius_+2];
-        for(int j=0; j<=cell_radius_+1; j++)
-	{
-	  distances_[i][j] = sqrt(i*i + j*j);
-	}
-      }
+        delete[] distances_[i];
+      delete[] distances_;
     }
-    ~CachedDistanceMap()
-    {
-      if(distances_)
-      {
-	for(int i=0; i<=cell_radius_+1; i++)
-	  delete[] distances_[i];
-	delete[] distances_;
-      }
-    }
-    double** distances_;
-    double scale_;
-    double max_dist_;
-    int cell_radius_;
+  }
+  double** distances_;
+  double scale_;
+  double max_dist_;
+  int cell_radius_;
 };
 
 
@@ -71,9 +74,7 @@ bool operator<(const CellData& a, const CellData& b)
   return a.map_->cells[MAP_INDEX(a.map_, a.i_, a.j_)].occ_dist > a.map_->cells[MAP_INDEX(b.map_, b.i_, b.j_)].occ_dist;
 }
 
-CachedDistanceMap*
-get_distance_map(double scale, double max_dist)
-{
+CachedDistanceMap* get_distance_map(double scale, double max_dist) {
   static CachedDistanceMap* cdm = NULL;
 
   if(!cdm || (cdm->scale_ != scale) || (cdm->max_dist_ != max_dist))
@@ -90,8 +91,7 @@ void enqueue(map_t* map, int i, int j,
 	     int src_i, int src_j,
 	     std::priority_queue<CellData>& Q,
 	     CachedDistanceMap* cdm,
-	     unsigned char* marked)
-{
+	     unsigned char* marked) {
   if(marked[MAP_INDEX(map, i, j)])
     return;
 
@@ -121,37 +121,42 @@ void map_update_cspace(map_t *map, double max_occ_dist)
 {
   unsigned char* marked;
   std::priority_queue<CellData> Q;
-
-  marked = new unsigned char[map->size_x*map->size_y];
+  // marked用来表示某个cell时候已经加入到队列Q中。避免重复加入队列。 
+  marked = new unsigned char[map->size_x*map->size_y]; 
   memset(marked, 0, sizeof(unsigned char) * map->size_x*map->size_y);
 
   map->max_occ_dist = max_occ_dist;
 
+  // 设计一个可以通过cell标号x,y来查询距离的二维数组。数组的大小由scale和
+  // max_occ_dist来确定。
   CachedDistanceMap* cdm = get_distance_map(map->scale, map->max_occ_dist);
 
   // Enqueue all the obstacle cells
+  // 遍历map的所有点，计算出每个cell距离最近的障碍物的距离, 不是obstacle的默认距
+  // 离是max_occ_dist。同时把障碍物加入到队列Q中。
   CellData cell;
   cell.map_ = map;
-  for(int i=0; i<map->size_x; i++)
-  {
+  for(int i=0; i<map->size_x; i++) {
     cell.src_i_ = cell.i_ = i;
-    for(int j=0; j<map->size_y; j++)
-    {
-      if(map->cells[MAP_INDEX(map, i, j)].occ_state == +1)
-      {
-	map->cells[MAP_INDEX(map, i, j)].occ_dist = 0.0;
-	cell.src_j_ = cell.j_ = j;
-	marked[MAP_INDEX(map, i, j)] = 1;
-	Q.push(cell);
+    for(int j=0; j<map->size_y; j++) {
+      if(map->cells[MAP_INDEX(map, i, j)].occ_state == +1) {
+        map->cells[MAP_INDEX(map, i, j)].occ_dist = 0.0;
+        cell.src_j_ = cell.j_ = j;
+        marked[MAP_INDEX(map, i, j)] = 1;
+        Q.push(cell);
       }
       else
-	map->cells[MAP_INDEX(map, i, j)].occ_dist = max_occ_dist;
+        map->cells[MAP_INDEX(map, i, j)].occ_dist = max_occ_dist;
     }
   }
 
+  // 遍历障碍物点附近距离max_occ_dist远的所有cell，将他们全部加入队列。其中
+  // src_i_和src_j_表示这个点距离最近的障碍物点。当Q中的一个cell的四个方向都检查
+  // 之后就可移除队列了。
   while(!Q.empty())
   {
     CellData current_cell = Q.top();
+    // 查询这个cell前后左右四个方向的cell
     if(current_cell.i_ > 0)
       enqueue(map, current_cell.i_-1, current_cell.j_, 
 	      current_cell.src_i_, current_cell.src_j_,

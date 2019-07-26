@@ -348,7 +348,7 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha3", alpha3_, 0.2);
   private_nh_.param("odom_alpha4", alpha4_, 0.2);
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
-  
+
   private_nh_.param("do_beamskip", do_beamskip_, false);
   private_nh_.param("beam_skip_distance", beam_skip_distance_, 0.5);
   private_nh_.param("beam_skip_threshold", beam_skip_threshold_, 0.3);
@@ -428,17 +428,17 @@ AmclNode::AmclNode() :
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
-  global_loc_srv_ = nh_.advertiseService("global_localization", 
+  global_loc_srv_ = nh_.advertiseService("global_localization",
 					 &AmclNode::globalLocalizationCallback,
                                          this);
   nomotion_update_srv_= nh_.advertiseService("request_nomotion_update", &AmclNode::nomotionUpdateCallback, this);
   set_map_srv_= nh_.advertiseService("set_map", &AmclNode::setMapCallback, this);
 
   laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
-  laser_scan_filter_ = 
-          new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
-                                                        *tf_, 
-                                                        odom_frame_id_, 
+  laser_scan_filter_ =
+          new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_,
+                                                        *tf_,
+                                                        odom_frame_id_,
                                                         100);
   laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
                                                    this, _1));
@@ -458,7 +458,7 @@ AmclNode::AmclNode() :
 
   // 15s timer to warn on lack of receipt of laser scans, #5209
   laser_check_interval_ = ros::Duration(15.0);
-  check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
+  check_laser_timer_ = nh_.createTimer(laser_check_interval_,
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
 }
 
@@ -537,16 +537,16 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   alpha_fast_ = config.recovery_alpha_fast;
   tf_broadcast_ = config.tf_broadcast;
 
-  do_beamskip_= config.do_beamskip; 
-  beam_skip_distance_ = config.beam_skip_distance; 
-  beam_skip_threshold_ = config.beam_skip_threshold; 
+  do_beamskip_= config.do_beamskip;
+  beam_skip_distance_ = config.beam_skip_distance;
+  beam_skip_threshold_ = config.beam_skip_threshold;
 
   pf_ = pf_alloc(min_particles_, max_particles_,
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
-  pf_err_ = config.kld_err; 
-  pf_z_ = config.kld_z; 
+  pf_err_ = config.kld_err;
+  pf_z_ = config.kld_z;
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
 
@@ -578,8 +578,8 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
-					laser_likelihood_max_dist_, 
-					do_beamskip_, beam_skip_distance_, 
+					laser_likelihood_max_dist_,
+					do_beamskip_, beam_skip_distance_,
 					beam_skip_threshold_, beam_skip_error_threshold_);
     ROS_INFO("Done initializing likelihood field model with probabilities.");
   }
@@ -595,10 +595,10 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   global_frame_id_ = config.global_frame_id;
 
   delete laser_scan_filter_;
-  laser_scan_filter_ = 
-          new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
-                                                        *tf_, 
-                                                        odom_frame_id_, 
+  laser_scan_filter_ =
+          new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_,
+                                                        *tf_,
+                                                        odom_frame_id_,
                                                         100);
   laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
                                                    this, _1));
@@ -708,11 +708,11 @@ void AmclNode::savePoseToServer()
   private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
   private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
   private_nh_.setParam("initial_pose_a", yaw);
-  private_nh_.setParam("initial_cov_xx", 
+  private_nh_.setParam("initial_cov_xx",
                                   last_published_pose.pose.covariance[6*0+0]);
-  private_nh_.setParam("initial_cov_yy", 
+  private_nh_.setParam("initial_cov_yy",
                                   last_published_pose.pose.covariance[6*1+1]);
-  private_nh_.setParam("initial_cov_aa", 
+  private_nh_.setParam("initial_cov_aa",
                                   last_published_pose.pose.covariance[6*5+5]);
 }
 
@@ -729,7 +729,7 @@ void AmclNode::updatePoseFromServer()
   private_nh_.param("initial_pose_x", tmp_pos, init_pose_[0]);
   if(!std::isnan(tmp_pos))
     init_pose_[0] = tmp_pos;
-  else 
+  else
     ROS_WARN("ignoring NAN in initial pose X position");
   private_nh_.param("initial_pose_y", tmp_pos, init_pose_[1]);
   if(!std::isnan(tmp_pos))
@@ -755,10 +755,10 @@ void AmclNode::updatePoseFromServer()
   if(!std::isnan(tmp_pos))
     init_cov_[2] = tmp_pos;
   else
-    ROS_WARN("ignoring NAN in initial covariance AA");	
+    ROS_WARN("ignoring NAN in initial covariance AA");
 }
 
-void 
+void
 AmclNode::checkLaserReceived(const ros::TimerEvent& event)
 {
   ros::Duration d = ros::Time::now() - last_laser_received_ts_;
@@ -800,8 +800,13 @@ AmclNode::mapReceived(const nav_msgs::OccupancyGridConstPtr& msg)
   first_map_received_ = true;
 }
 
-void
-AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
+/**
+ * @brief 收到地图之后，都会:
+ *  1. 重新更新地图相关信息，包括地图的cell距离信息；
+ *  2. 创建新的滤波器，并从服务器获取初始位姿信息，重新初始化滤波器的粒子和分布。
+ *  3. 重新更新传感器信息和运动模型与观测模型。
+ */
+void AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
 {
   boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
 
@@ -809,19 +814,20 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
            msg.info.width,
            msg.info.height,
            msg.info.resolution);
-  
+
   if(msg.header.frame_id != global_frame_id_)
     ROS_WARN("Frame_id of map received:'%s' doesn't match global_frame_id:'%s'. This could cause issues with reading published topics",
              msg.header.frame_id.c_str(),
              global_frame_id_.c_str());
-
+  // 清空地图，粒子滤波，传感器相关数据结构。
   freeMapDependentMemory();
   // Clear queued laser objects because they hold pointers to the existing
   // map, #5202.
   lasers_.clear();
   lasers_update_.clear();
   frame_to_laser_.clear();
-
+  // 将地图转换成amcl要求的格式，每个cell只有三种值：
+  // -1(free),1(occupancied),0(unknown).
   map_ = convertMap(msg);
 
 #if NEW_UNIFORM_SAMPLING
@@ -841,6 +847,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_->pop_z = pf_z_;
 
   // Initialize the filter
+  // 初始化滤波器，主要是通过初始位姿和协方差。
   updatePoseFromServer();
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
   pf_init_pose_mean.v[0] = init_pose_[0];
@@ -869,8 +876,8 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
-					laser_likelihood_max_dist_, 
-					do_beamskip_, beam_skip_distance_, 
+					laser_likelihood_max_dist_,
+					do_beamskip_, beam_skip_distance_,
 					beam_skip_threshold_, beam_skip_error_threshold_);
     ROS_INFO("Done initializing likelihood field model.");
   }
@@ -909,8 +916,10 @@ AmclNode::freeMapDependentMemory()
  * Convert an OccupancyGrid map message into the internal
  * representation.  This allocates a map_t and returns it.
  */
-map_t*
-AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
+// 将地图转换成amcl要求的格式，每个cell只有三种值：
+// -1(free),1(occupancied),0(unknown).
+// 注意origin_x,origin_y是地图中心在世界坐标中的位置。
+map_t* AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
 {
   map_t* map = map_alloc();
   ROS_ASSERT(map);
@@ -947,11 +956,9 @@ AmclNode::~AmclNode()
   // TODO: delete everything allocated in constructor
 }
 
-bool
-AmclNode::getOdomPose(tf::Stamped<tf::Pose>& odom_pose,
+bool AmclNode::getOdomPose(tf::Stamped<tf::Pose>& odom_pose,
                       double& x, double& y, double& yaw,
-                      const ros::Time& t, const std::string& f)
-{
+                      const ros::Time& t, const std::string& f) {
   // Get the robot's pose
   tf::Stamped<tf::Pose> ident (tf::Transform(tf::createIdentityQuaternion(),
                                            tf::Vector3(0,0,0)), t, f);
@@ -1028,7 +1035,7 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
 }
 
 // force nomotion updates (amcl updating without requiring motion)
-bool 
+bool
 AmclNode::nomotionUpdateCallback(std_srvs::Empty::Request& req,
                                      std_srvs::Empty::Response& res)
 {
@@ -1047,8 +1054,13 @@ AmclNode::setMapCallback(nav_msgs::SetMap::Request& req,
   return true;
 }
 
-void
-AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
+/**
+ * @brief 地图和初始位姿收到时进行必要的初始化工作，当激光数据来的时候在这些基础
+ * 上进行处理。  
+ * @param
+ * @return  
+ */
+void AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
   last_laser_received_ts_ = ros::Time::now();
   if( map_ == NULL ) {
@@ -1058,6 +1070,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   int laser_index = -1;
 
   // Do we have the base->base_laser Tx yet?
+  // 可能有多个激光。 
+  // 如果是新激光。
   if(frame_to_laser_.find(laser_scan->header.frame_id) == frame_to_laser_.end())
   {
     ROS_DEBUG("Setting up laser %d (frame_id=%s)\n", (int)frame_to_laser_.size(), laser_scan->header.frame_id.c_str());
@@ -1100,6 +1114,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
 
   // Where was the robot when this scan was taken?
+  // pose表示产生scan时base在odom中的坐标。
   pf_vector_t pose;
   if(!getOdomPose(latest_odom_pose_, pose.v[0], pose.v[1], pose.v[2],
                   laser_scan->header.stamp, base_frame_id_))
@@ -1111,6 +1126,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
   pf_vector_t delta = pf_vector_zero();
 
+  // 只有获得里程计之后pf_init_才会变成true.
   if(pf_init_)
   {
     // Compute change in pose
@@ -1133,8 +1149,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
 
   bool force_publication = false;
-  if(!pf_init_)
-  {
+  if(!pf_init_) {
     // Pose at last filter update
     pf_odom_pose_ = pose;
 
@@ -1163,6 +1178,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     odata.delta = delta;
 
     // Use the action data to update the filter
+    // 更新所有粒子的运动。
     odom_->UpdateAction(pf_, (AMCLSensorData*)&odata);
 
     // Pose at last filter update
@@ -1179,7 +1195,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
     // To account for lasers that are mounted upside-down, we determine the
     // min, max, and increment angles of the laser in the base frame.
-    //
     // Construct min and max angles of laser, in the base_link frame.
     tf::Quaternion q;
     q.setRPY(0.0, 0.0, laser_scan->angle_min);
@@ -1219,6 +1234,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     else
       range_min = laser_scan->range_min;
     // The AMCLLaserData destructor will free this memory
+    // ranges中保存的是距离和方位角的tuple。
     ldata.ranges = new double[ldata.range_count][2];
     ROS_ASSERT(ldata.ranges);
     for(int i=0;i<ldata.range_count;i++)
@@ -1230,8 +1246,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       else
         ldata.ranges[i][0] = laser_scan->ranges[i];
       // Compute bearing
-      ldata.ranges[i][1] = angle_min +
-              (i * angle_increment);
+      ldata.ranges[i][1] = angle_min + (i * angle_increment);
     }
 
     lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata);
@@ -1438,8 +1453,11 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   handleInitialPoseMessage(*msg);
 }
 
-void
-AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg)
+/**
+ * @brief 设定新的初始位姿之后，都会更新初始值并重置pf滤波器，包括粒子，节点的分
+ * 布。  
+ */
+void AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg)
 {
   boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
   if(msg.header.frame_id == "")
@@ -1458,6 +1476,7 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
 
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
+  // 获取两次位置之间里程计的变化。
   tf::StampedTransform tx_odom;
   try
   {
@@ -1480,7 +1499,7 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
       ROS_WARN("Failed to transform initial pose in time (%s)", e.what());
     tx_odom.setIdentity();
   }
-
+  // 折算旧的位姿在这个里程计变化下的位姿。
   tf::Pose pose_old, pose_new;
   tf::poseMsgToTF(msg.pose.pose, pose_old);
   pose_new = pose_old * tx_odom;
@@ -1512,6 +1531,7 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
   initial_pose_hyp_ = new amcl_hyp_t();
   initial_pose_hyp_->pf_pose_mean = pf_init_pose_mean;
   initial_pose_hyp_->pf_pose_cov = pf_init_pose_cov;
+  // 重新初始化滤波器。
   applyInitialPose();
 }
 
@@ -1519,6 +1539,7 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
  * If initial_pose_hyp_ and map_ are both non-null, apply the initial
  * pose to the particle filter state.  initial_pose_hyp_ is deleted
  * and set to NULL after it is used.
+ * 每次给了初始位姿之后都要重新调整滤波器的粒子信息。
  */
 void
 AmclNode::applyInitialPose()

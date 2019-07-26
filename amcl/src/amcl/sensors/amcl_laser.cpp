@@ -90,7 +90,7 @@ AMCLLaser::SetModelLikelihoodField(double z_hit,
   this->z_hit = z_hit;
   this->z_rand = z_rand;
   this->sigma_hit = sigma_hit;
-
+  // 计算map中的距离障碍物 max_occ_dist 范围内的点距离那个障碍物最近?距离是多少?
   map_update_cspace(this->map, max_occ_dist);
 }
 
@@ -233,6 +233,7 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     pose = sample->pose;
 
     // Take account of the laser pose relative to the robot
+    // 计算该粒子位姿下激光在map中的位姿。
     pose = pf_vector_coord_add(self->laser_pose, pose);
 
     p = 1.0;
