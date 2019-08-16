@@ -247,14 +247,23 @@ class AmclNode
     dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
     amcl::AMCLConfig default_config_;
     ros::Timer check_laser_timer_;
-
+  // max_beams表示amcl只提取最多这么多粒子来计算匹配；后两者表示最大最小粒子个数。 
     int max_beams_, min_particles_, max_particles_;
+  // 里程计模型使用的参数，DIFF模型只使用了1到4.
     double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
     double alpha_slow_, alpha_fast_;
+  // 似然观测模型需要使用的参数。z_表示各种情况出现的权重。
+  // z_hit_表示测量噪声引入误差的权重，z_short_表示不希望物体如运动的人等产生的
+  // 误差的比重；z_max_表示测量失败导致的误差；z_rand_表示传感器本身测量导致的比
+  // 如测量进了墙里面这种引入的误差的权重。
     double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
   //beam skip related params
     bool do_beamskip_;
+  // 下面这三个参数是测量模型ModelLikelihoodFieldProb需要的参数。
     double beam_skip_distance_, beam_skip_threshold_, beam_skip_error_threshold_;
+  // laser_likelihood_max_dist_表示我们要考虑的距离障碍物最远的距离，超过这个距
+  // 离我们就认为是最远距离算了。这个参数影响在地图来的时候要计算每个cell距离最
+  // 远障碍物的距离。
     double laser_likelihood_max_dist_;
     odom_model_t odom_model_type_;
     double init_pose_[3];
@@ -341,6 +350,8 @@ AmclNode::AmclNode() :
   private_nh_.param("laser_max_beams", max_beams_, 30);
   private_nh_.param("min_particles", min_particles_, 100);
   private_nh_.param("max_particles", max_particles_, 5000);
+  // pf_err_和pf_z_在后面用来表示要满则以pf_z_的概率使误差在pf_err_以内需要的粒
+  // 子个数。
   private_nh_.param("kld_err", pf_err_, 0.01);
   private_nh_.param("kld_z", pf_z_, 0.99);
   private_nh_.param("odom_alpha1", alpha1_, 0.2);
@@ -405,6 +416,7 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_frame_id", odom_frame_id_, std::string("odom"));
   private_nh_.param("base_frame_id", base_frame_id_, std::string("base_link"));
   private_nh_.param("global_frame_id", global_frame_id_, std::string("map"));
+  // 每隔一个scan进行一次resample。
   private_nh_.param("resample_interval", resample_interval_, 2);
   double tmp_tol;
   private_nh_.param("transform_tolerance", tmp_tol, 0.1);
@@ -1078,7 +1090,7 @@ void AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     lasers_.push_back(new AMCLLaser(*laser_));
     lasers_update_.push_back(true);
     laser_index = frame_to_laser_.size();
-
+    // 计算激光在机器人坐标系中的位姿。 
     tf::Stamped<tf::Pose> ident (tf::Transform(tf::createIdentityQuaternion(),
                                              tf::Vector3(0,0,0)),
                                  ros::Time(), laser_scan->header.frame_id);
@@ -1165,6 +1177,7 @@ void AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     resample_count_ = 0;
   }
   // If the robot has moved, update the filter
+  // 如果滤波器已经初始化，并且激光需要用来更新。
   else if(pf_init_ && lasers_update_[laser_index])
   {
     //printf("pose\n");
@@ -1256,6 +1269,7 @@ void AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     pf_odom_pose_ = pose;
 
     // Resample the particles
+    // 间隔resample_interval_个scan就重采样一次。
     if(!(++resample_count_ % resample_interval_))
     {
       pf_update_resample(pf_);
@@ -1283,6 +1297,7 @@ void AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     }
   }
 
+  // resampled表示刚进行过重采样。
   if(resampled || force_publication)
   {
     // Read out the current hypotheses

@@ -332,7 +332,7 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
         tf::Point p(wx, wy, 0);
         p = transform(p);
         // Set master_grid with cell from map
-        if (worldToMap(p.x(), p.y(), mx, my))
+
         {
           if (!use_maximum_)
             master_grid.setCost(i, j, getCost(mx, my));

@@ -73,7 +73,8 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   // distrubition will be less than [err].
   pf->pop_err = 0.01;
   pf->pop_z = 3;
-  pf->dist_threshold = 0.5;
+  pf->dist_threshold = 0.5;  /* 用来判断是否收敛，如果每个粒子距离所有例子位置均
+                              * 值小于这个范围，则认为是收敛的。 */
   /* 给两个set赋值，current_set指向当前活跃的set。*/
   pf->current_set = 0;
   for (j = 0; j < 2; j++)
@@ -216,6 +217,9 @@ void pf_init_converged(pf_t *pf){
   pf->converged = 0;
 }
 
+/* 判断是否收敛，不收敛返回0，反之返回1. 计算所有粒子的位置，在求均值，在遍历所
+ * 有的粒子和均值的距离，如果任何一个粒子和均值的偏差大于设定值 dist_threshold，
+ * 那就认为不收敛。反之则为收敛。 dist_threshold 是在 pf_alloc 函数中设定的，为0.5m*/
 int pf_update_converged(pf_t *pf)
 {
   int i;
@@ -225,7 +229,6 @@ int pf_update_converged(pf_t *pf)
 
   set = pf->sets + pf->current_set;
   double mean_x = 0, mean_y = 0;
-
   for (i = 0; i < set->sample_count; i++){
     sample = set->samples + i;
 
@@ -318,6 +321,7 @@ void pf_update_resample(pf_t *pf)
 {
   int i;
   double total;
+  /* 重采样之后粒子会冲set a中迁移到set b中。 */
   pf_sample_set_t *set_a, *set_b;
   pf_sample_t *sample_a, *sample_b;
 
@@ -334,6 +338,7 @@ void pf_update_resample(pf_t *pf)
   // Build up cumulative probability table for resampling.
   // TODO: Replace this with a more efficient procedure
   // (e.g., http://www.network-theory.co.uk/docs/gslref/GeneralDiscreteDistributions.html)
+  /* c的size比粒子数多一个，第一个有特殊用处。后面的用来保存每个粒子的权重. */
   c = (double*)malloc(sizeof(double)*(set_a->sample_count+1));
   c[0] = 0.0;
   for(i=0;i<set_a->sample_count;i++)
@@ -410,7 +415,7 @@ void pf_update_resample(pf_t *pf)
       // Add sample to list
       sample_b->pose = sample_a->pose;
     }
-
+    /*重采样的所有粒子的权重都是相同的，现在都表示为1，后面进行归一化。 */
     sample_b->weight = 1.0;
     total += sample_b->weight;
 
@@ -418,6 +423,8 @@ void pf_update_resample(pf_t *pf)
     pf_kdtree_insert(set_b->kdtree, sample_b->pose, sample_b->weight);
 
     // See if we have enough samples yet
+    /* pf_resample_limit使用KLD来确定需要的粒子个数。如果当前set b中sample个数小
+     * 于这个数就继续增加粒子。而正价的粒子都是从set a中采样出来的。 */
     if (set_b->sample_count > pf_resample_limit(pf, set_b->kdtree->leaf_count))
       break;
   }
@@ -428,7 +435,7 @@ void pf_update_resample(pf_t *pf)
 
   //fprintf(stderr, "\n\n");
 
-  // Normalize weights
+  // Normalize weights, 归一化b中采样出来的粒子的权重。
   for (i = 0; i < set_b->sample_count; i++)
   {
     sample_b = set_b->samples + i;
@@ -440,7 +447,7 @@ void pf_update_resample(pf_t *pf)
 
   // Use the newly created sample set
   pf->current_set = (pf->current_set + 1) % 2;
-
+  /* 判断粒子是否收敛。 */
   pf_update_converged(pf);
 
   free(c);
@@ -450,6 +457,7 @@ void pf_update_resample(pf_t *pf)
 
 // Compute the required number of samples, given that there are k bins
 // with samples in them.  This is taken directly from Fox et al.
+/* 是使用KLD来计算需要的粒子个数。见书中 P264。 */
 int pf_resample_limit(pf_t *pf, int k)
 {
   double a, b, c, x;
@@ -486,7 +494,8 @@ void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set)
   size_t count;
   double weight;
 
-  // Cluster the samples
+  // Cluster the samples, 对粒子进行聚类，分成多个cluster。
+  /* 每个cluster都有各自的均值和协方差，还有包含的粒子个数。 */
   pf_kdtree_cluster(set->kdtree);
 
   // Initialize cluster stats
