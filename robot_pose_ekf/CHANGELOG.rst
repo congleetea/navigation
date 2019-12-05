@@ -2,6 +2,9 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.5 (2019-11-15)
+-------------------
+
 1.14.4 (2018-06-19)
 -------------------
 * Merge pull request `#713 <https://github.com/ros-planning/navigation/issues/713>`_ from garethellis0/kinetic-devel

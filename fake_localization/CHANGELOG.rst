@@ -2,6 +2,11 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.5 (2019-11-15)
+-------------------
+* Fix for `#805 <https://github.com/ros-planning/navigation/issues/805>`_ (`#813 <https://github.com/ros-planning/navigation/issues/813>`_)
+* Contributors: David V. Lu!!
+
 1.14.4 (2018-06-19)
 -------------------
 * Merge pull request `#609 <https://github.com/ros-planning/navigation/issues/609>`_ from vrabaud/more_tf2

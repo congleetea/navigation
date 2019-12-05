@@ -2,6 +2,9 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.5 (2019-11-15)
+-------------------
+
 1.14.4 (2018-06-19)
 -------------------
 * Merge pull request `#711 <https://github.com/ros-planning/navigation/issues/711>`_ from SteveMacenski/costmap_clearing_thread_lock

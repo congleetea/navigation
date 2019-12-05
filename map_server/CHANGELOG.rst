@@ -2,6 +2,9 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.5 (2019-11-15)
+-------------------
+
 1.14.4 (2018-06-19)
 -------------------
 * Allow specification of free/occupied thresholds for map_saver (`#708 <https://github.com/ros-planning/navigation/issues/708>`_)
