@@ -2,3 +2,6 @@
 *.project
 *.cproject
 
+GPATH
+GRTAGS
+GTAGS
