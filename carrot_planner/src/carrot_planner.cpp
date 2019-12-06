@@ -154,6 +154,15 @@ namespace carrot_planner {
     }
 
     plan.push_back(start);
+    float step = 0.1;
+    int pose_num = floor(std::max(fabs(diff_x/step), fabs(diff_y/step))); 
+    ROS_INFO("diff %f,%f, num: %d, ds: %f,%f.", diff_x, diff_y, pose_num, diff_x/step,diff_y/step);
+    for(int i = 0; i < pose_num; ++i) {
+      geometry_msgs::PoseStamped pose = start;
+      pose.pose.position.x = start.pose.position.x + i * step * diff_x;
+      pose.pose.position.y = start.pose.position.y + i * step * diff_y;
+      plan.push_back(pose);
+    }
     geometry_msgs::PoseStamped new_goal = goal;
     tf::Quaternion goal_quat = tf::createQuaternionFromYaw(target_yaw);
 
@@ -166,6 +175,7 @@ namespace carrot_planner {
     new_goal.pose.orientation.w = goal_quat.w();
 
     plan.push_back(new_goal);
+    ROS_INFO("Publish path size: %d.", plan.size());
     return (done);
   }
 
