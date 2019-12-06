@@ -161,7 +161,7 @@ class AmclNode
     map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
     void updatePoseFromServer();
     void applyInitialPose();
-
+    void PublishTwist();
     double getYaw(tf::Pose& t);
 
     //parameter for what odom to use
@@ -233,12 +233,14 @@ class AmclNode
     ros::NodeHandle private_nh_;
     ros::Publisher pose_pub_;
     ros::Publisher particlecloud_pub_;
+    ros::Publisher cmd_vel_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
     ros::ServiceServer set_map_srv_;
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
-
+  ros::Time initial_pose_time_;
+  bool got_initial_pose_;
     amcl_hyp_t* initial_pose_hyp_;
     bool first_map_received_;
     bool first_reconfigure_call_;
@@ -428,6 +430,7 @@ AmclNode::AmclNode() :
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
+  cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/mobile_base/cmd_vel", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
@@ -1110,7 +1113,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
 
   pf_vector_t delta = pf_vector_zero();
-
+  if(ros::Time::now() - initial_pose_time_ < ros::Duration(3.0)) {
+    PublishTwist();
+  }
   if(pf_init_)
   {
     // Compute change in pose
@@ -1499,15 +1504,17 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
   pf_init_pose_mean.v[2] = getYaw(pose_new);
   pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
   // Copy in the covariance, converting from 6-D to 3-D
-  for(int i=0; i<2; i++)
-  {
-    for(int j=0; j<2; j++)
-    {
-      pf_init_pose_cov.m[i][j] = msg.pose.covariance[6*i+j];
-    }
-  }
-  pf_init_pose_cov.m[2][2] = msg.pose.covariance[6*5+5];
-
+  // for(int i=0; i<2; i++)
+  // {
+  //   for(int j=0; j<2; j++)
+  //   {
+  //     pf_init_pose_cov.m[i][j] = msg.pose.covariance[6*i+j];
+  //   }
+  // }
+  // pf_init_pose_cov.m[2][2] = msg.pose.covariance[6*5+5];
+  pf_init_pose_cov.m[0][0] = 0.7 * 0.7;
+  pf_init_pose_cov.m[1][1] = 0.7 * 0.7;
+  pf_init_pose_cov.m[2][2] = 1.57 * 1.57;
   delete initial_pose_hyp_;
   initial_pose_hyp_ = new amcl_hyp_t();
   initial_pose_hyp_->pf_pose_mean = pf_init_pose_mean;
@@ -1530,5 +1537,12 @@ AmclNode::applyInitialPose()
 
     delete initial_pose_hyp_;
     initial_pose_hyp_ = NULL;
+    initial_pose_time_ = ros::Time::now();
   }
+}
+
+void AmclNode::PublishTwist() {
+  geometry_msgs::Twist twist;
+  twist.angular.z = 0.3;
+  cmd_vel_pub_.publish(twist);
 }

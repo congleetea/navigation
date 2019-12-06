@@ -154,6 +154,16 @@ namespace carrot_planner {
     }
 
     plan.push_back(start);
+    float step = 0.1;
+    int pose_num = floor(std::max(fabs(diff_x/step), fabs(diff_y/step))); 
+    float step_x = diff_x / pose_num;
+    float step_y = diff_y / pose_num;
+    for(int i = 0; i < pose_num; ++i) {
+      geometry_msgs::PoseStamped pose = start;
+      pose.pose.position.x = start.pose.position.x + i * step_x;
+      pose.pose.position.y = start.pose.position.y + i * step_y;
+      plan.push_back(pose);
+    }
     geometry_msgs::PoseStamped new_goal = goal;
     tf::Quaternion goal_quat = tf::createQuaternionFromYaw(target_yaw);
 
