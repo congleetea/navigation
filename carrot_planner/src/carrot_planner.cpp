@@ -156,11 +156,13 @@ namespace carrot_planner {
     plan.push_back(start);
     float step = 0.1;
     int pose_num = floor(std::max(fabs(diff_x/step), fabs(diff_y/step))); 
-    ROS_INFO("diff %f,%f, num: %d, ds: %f,%f.", diff_x, diff_y, pose_num, diff_x/step,diff_y/step);
+    float step_x = diff_x / pose_num;
+    float step_y = diff_y / pose_num;
+    ROS_INFO("diff %f,%f, num: %d, ds: %f,%f, step: %f,%f.", diff_x, diff_y, pose_num, diff_x/step,diff_y/step, step_x, step_y);
     for(int i = 0; i < pose_num; ++i) {
       geometry_msgs::PoseStamped pose = start;
-      pose.pose.position.x = start.pose.position.x + i * step * diff_x;
-      pose.pose.position.y = start.pose.position.y + i * step * diff_y;
+      pose.pose.position.x = start.pose.position.x + i * step_x;
+      pose.pose.position.y = start.pose.position.y + i * step_y;
       plan.push_back(pose);
     }
     geometry_msgs::PoseStamped new_goal = goal;
