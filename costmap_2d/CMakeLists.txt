@@ -108,6 +108,7 @@ add_library(layers
   plugins/inflation_layer.cpp
   plugins/obstacle_layer.cpp
   plugins/static_layer.cpp
+  plugins/virtual_layer.cpp
   plugins/voxel_layer.cpp
   src/observation_buffer.cpp
 )
