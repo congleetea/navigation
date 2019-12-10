@@ -135,7 +135,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     {
       std::string pname = static_cast<std::string>(my_list[i]["name"]);
       std::string type = static_cast<std::string>(my_list[i]["type"]);
-      ROS_INFO("Using plugin \"%s\"", pname.c_str());
+      ROS_INFO("%s using plugin \"%s\"", name_.c_str(), pname.c_str());
 
       boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance(type);
       layered_costmap_->addPlugin(plugin);

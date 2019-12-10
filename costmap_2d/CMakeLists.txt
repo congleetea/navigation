@@ -41,6 +41,7 @@ add_message_files(
     DIRECTORY msg
     FILES
     VoxelGrid.msg
+    VirtualWall.msg
 )
 
 generate_messages(
@@ -48,6 +49,7 @@ generate_messages(
         std_msgs
         geometry_msgs
         map_msgs
+        nav_msgs
 )
 
 # dynamic reconfigure
