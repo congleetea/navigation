@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  *   Copyright (c) 2018 MuYuan Development Team. All rights reserved.
- *   @author Li Xuancong 
+ *   @author Li Xuancong
  *   @created Monday, December 9 08:32:47 CST 2019
  *
  ****************************************************************************/
@@ -20,12 +20,10 @@
 #include <map_msgs/OccupancyGridUpdate.h>
 #include <message_filters/subscriber.h>
 
-namespace costmap_2d
-{
+namespace costmap_2d {
 
-class VirtualLayer : public CostmapLayer
-{
-public:
+class VirtualLayer : public CostmapLayer {
+ public:
   VirtualLayer();
   virtual ~VirtualLayer();
   virtual void onInitialize();
@@ -33,27 +31,30 @@ public:
   virtual void deactivate();
   virtual void reset();
 
-  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
-                            double* max_x, double* max_y);
-  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw,
+    double *min_x, double *min_y,
+    double *max_x, double *max_y);
+  virtual void updateCosts(costmap_2d::Costmap2D &master_grid, int min_i,
+    int min_j, int max_i, int max_j);
 
   virtual void matchSize();
 
-private:
+ private:
   /**
    * @brief  Callback to update the costmap's map from the map_server
    * @param new_map The map to put into the costmap. The origin of the new
    * map along with its size will determine what parts of the costmap's
    * static map are overwritten.
    */
-  void IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr& new_map);
-  void incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update);
+  void IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr &new_map);
+  void incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr &update);
   void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 
   unsigned char interpretValue(unsigned char value);
-  void DrawLine(const costmap_2d::VirtualWall& msg, std::vector<uint32_t>& virtual_points);
+  void DrawLine(const costmap_2d::VirtualWall &msg,
+    std::vector<uint32_t> &virtual_points);
   uint32_t GetIndex(uint32_t width, uint32_t mx, uint32_t my);
-  
+
   std::string global_frame_;  ///< @brief The global frame for the costmap
   std::string map_frame_;  /// @brief frame that map is located in
   bool subscribe_to_updates_;

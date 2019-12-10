@@ -31,11 +31,12 @@ void VirtualLayer::onInitialize() {
   current_ = true;
   global_frame_ = layered_costmap_->getGlobalFrameID();
   std::string virtual_wall_topic;
-  nh.param("virtual_wall_topic", virtual_wall_topic, std::string("/virtual_wall"));
+  nh.param("virtual_wall_topic", virtual_wall_topic,
+    std::string("/virtual_wall"));
   nh.param("first_map_only", first_map_only_, false);
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
   nh.param("track_unknown_space", track_unknown_space_, true);
-  nh.param("use_maximum", use_maximum_, false);
+  nh.param("use_maximum", use_maximum_, true);
   int temp_lethal_threshold, temp_unknown_cost_value;
   nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
   nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
@@ -100,7 +101,7 @@ void VirtualLayer::IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr
   &new_map) {
   unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
   ROS_DEBUG("Received a %d X %d virtual wall at %f m/pix, has %d points.", size_x,
-            size_y, new_map->info.resolution, int(new_map->points.size()));
+    size_y, new_map->info.resolution, int(new_map->points.size()));
 
   if (new_map->points.size() % 2 != 0) {
     return;
@@ -117,7 +118,7 @@ void VirtualLayer::IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr
       master->getOriginX() != new_map->info.origin.position.x ||
       master->getOriginY() != new_map->info.origin.position.y)) {
     // Update the size of the layered costmap (and all layers, including this one)
-    ROS_ERROR("This virtual wall (%dX%d) is not matched with static map(%dX%d).",
+    ROS_ERROR("This virtual wall (%dX%d) is not matched with master costmap (%dX%d).",
       size_x, size_y, master->getSizeInCellsX(), master->getSizeInCellsY());
     return;
   } else if (size_x_ != size_x || size_y_ != size_y ||
