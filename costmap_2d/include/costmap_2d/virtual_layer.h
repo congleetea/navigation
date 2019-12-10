@@ -54,6 +54,8 @@ class VirtualLayer : public CostmapLayer {
   void DrawLine(const costmap_2d::VirtualWall &msg,
     std::vector<uint32_t> &virtual_points);
   uint32_t GetIndex(uint32_t width, uint32_t mx, uint32_t my);
+  bool IsSameWall(const costmap_2d::VirtualWall &last_wall,
+    const costmap_2d::VirtualWall &new_wall);
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
   std::string map_frame_;  /// @brief frame that map is located in
@@ -66,6 +68,8 @@ class VirtualLayer : public CostmapLayer {
   bool first_map_only_;      ///< @brief Store the first static map and reuse it on reinitializing
   bool trinary_costmap_;
   ros::Subscriber virtual_wall_sub_, map_update_sub_;
+
+  costmap_2d::VirtualWall last_wall_;
 
   unsigned char lethal_threshold_, unknown_cost_value_;
 

@@ -43,6 +43,7 @@ void VirtualLayer::onInitialize() {
   nh.param("trinary_costmap", trinary_costmap_, true);
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
+  last_wall_.points.clear();
   virtual_wall_sub_ = g_nh.subscribe(virtual_wall_topic, 1,
       &VirtualLayer::IncommingVirtualWall, this);
   map_received_ = false;
@@ -100,7 +101,7 @@ unsigned char VirtualLayer::interpretValue(unsigned char value) {
 void VirtualLayer::IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr
   &new_map) {
   unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
-  ROS_DEBUG("Received a %d X %d virtual wall at %f m/pix, has %d points.", size_x,
+  ROS_INFO("Received a %d X %d virtual wall at %f m/pix, has %d points.", size_x,
     size_y, new_map->info.resolution, int(new_map->points.size()));
 
   if (new_map->points.size() % 2 != 0) {
@@ -116,7 +117,8 @@ void VirtualLayer::IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr
       master->getSizeInCellsY() != size_y ||
       master->getResolution() != new_map->info.resolution ||
       master->getOriginX() != new_map->info.origin.position.x ||
-      master->getOriginY() != new_map->info.origin.position.y)) {
+      master->getOriginY() != new_map->info.origin.position.y ||
+      !IsSameWall(last_wall_, *new_map))) {
     // Update the size of the layered costmap (and all layers, including this one)
     ROS_ERROR("This virtual wall (%dX%d) is not matched with master costmap (%dX%d).",
       size_x, size_y, master->getSizeInCellsX(), master->getSizeInCellsY());
@@ -124,7 +126,8 @@ void VirtualLayer::IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr
   } else if (size_x_ != size_x || size_y_ != size_y ||
     resolution_ != new_map->info.resolution ||
     origin_x_ != new_map->info.origin.position.x ||
-    origin_y_ != new_map->info.origin.position.y) {
+    origin_y_ != new_map->info.origin.position.y ||
+    !IsSameWall(last_wall_, *new_map)) {
     // only update the size of the costmap stored locally in this layer
     ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y,
       new_map->info.resolution);
@@ -148,6 +151,7 @@ void VirtualLayer::IncommingVirtualWall(const costmap_2d::VirtualWallConstPtr
   height_ = size_y_;
   map_received_ = true;
   has_updated_data_ = true;
+  last_wall_ = *new_map;
 
   // shutdown the map subscrber if firt_map_only_ flag is on
   if (first_map_only_) {
@@ -259,6 +263,7 @@ void VirtualLayer::DrawLine(const costmap_2d::VirtualWall &msg,
   if (msg.points.size() < 2 || msg.points.size() % 2 != 0) {
     ROS_INFO("empty virtual wall or number of points is %d not even.",
       int(msg.points.size()));
+    virtual_points.clear();
     return;
   }
 
@@ -298,6 +303,22 @@ void VirtualLayer::DrawLine(const costmap_2d::VirtualWall &msg,
 
 uint32_t VirtualLayer::GetIndex(uint32_t width, uint32_t mx, uint32_t my) {
   return my * width + mx;
+}
+
+bool VirtualLayer::IsSameWall(const costmap_2d::VirtualWall &last_wall,
+  const costmap_2d::VirtualWall &new_wall) {
+  if (last_wall.points.size() != new_wall.points.size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < last_wall.points.size(); ++i) {
+    if (last_wall.points[i].x != new_wall.points[i].x ||
+      last_wall.points[i].y != new_wall.points[i].y) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace costmap_2d
